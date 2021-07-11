@@ -245,4 +245,4 @@ def train(train_model=True):
 
 
 if __name__ == '__main__':
-    train(train_model=True)
+    train(train_model=False)
