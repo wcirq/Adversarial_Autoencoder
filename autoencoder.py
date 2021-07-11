@@ -14,8 +14,8 @@ input_dim = 784
 n_l1 = 1000
 n_l2 = 1000
 z_dim = 2
-batch_size = 100
-n_epochs = 1000
+batch_size = 200
+n_epochs = 10
 learning_rate = 0.001
 beta1 = 0.9
 results_path = './Results/Autoencoder'
@@ -34,8 +34,8 @@ def generate_image_grid(sess, op):
     :param op: Operation that needs to be called inorder to get the decoder output
     :return: None, displays a matplotlib window with all the merged images.
     """
-    x_points = np.arange(0, 1, 1.5).astype(np.float32)
-    y_points = np.arange(0, 1, 1.5).astype(np.float32)
+    x_points = np.arange(-10, 10, 0.5).astype(np.float32)
+    y_points = np.arange(-10, 10, 0.5).astype(np.float32)
 
     nx, ny = len(x_points), len(y_points)
     plt.subplot()
@@ -185,5 +185,6 @@ def train(train_model):
                           save_path=tf.train.latest_checkpoint(results_path + '/' + all_results[-1] + '/Saved_models/'))
             generate_image_grid(sess, op=decoder_image)
 
+
 if __name__ == '__main__':
-    train(train_model=True)
+    train(train_model=False)
