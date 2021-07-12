@@ -15,61 +15,27 @@ REGULARIZATION_RATE = 0.0001
 TRAINING_STEPS = 10000
 MOVING_AVERAGE_DECAY = 0.99
 
-LOG_DIR = 'log_2'
-SPRITE_FILE = './log/mnist_sprite.jpg'
-META_FIEL = "./log/mnist_meta.tsv"
+LOG_DIR = 'log'
+SPRITE_FILE = 'mnist_sprite.png'
+META_FIEL = "mnist_meta.tsv"
 TENSOR_NAME = "FINAL_LOGITS"
+num = 500
 
-"""
-# 这里需要返回最后测试数据经过整个神经网络得到的输出层矩阵，因为有多张测试图片，每张图片对应了一个输出层向量。所以返回的结果是这些向量组成的矩阵。
-def train(mnist):
-    #  输入数据的命名空间。
-    with tf.name_scope('input'):
-        x = tf.placeholder(tf.float32, [None, mnist_inference.INPUT_NODE], name='x-input')
-        y_ = tf.placeholder(tf.float32, [None, mnist_inference.OUTPUT_NODE], name='y-input')
-    regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)
-    y = mnist_inference.inference(x, regularizer)
-    global_step = tf.Variable(0, trainable=False)
 
-    # 处理滑动平均的命名空间。
-    with tf.name_scope("moving_average"):
-        variable_averages = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY, global_step)
-        variables_averages_op = variable_averages.apply(tf.trainable_variables())
-
-    # 计算损失函数的命名空间。
-    with tf.name_scope("loss_function"):
-        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_, 1))
-        cross_entropy_mean = tf.reduce_mean(cross_entropy)
-        # 由于使用L2正则化，此处需要加上'losses'集合
-        loss = cross_entropy_mean + tf.add_n(tf.get_collection('losses'))
-
-    # 定义学习率、优化方法及每一轮执行训练的操作的命名空间。
-    with tf.name_scope("train_step"):
-        learning_rate = tf.train.exponential_decay(
-            LEARNING_RATE_BASE,
-            global_step,
-            mnist.train.num_examples/BATCH_SIZE, LEARNING_RATE_DECAY,
-            staircase=True)
-
-        train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
-        # 由于使用了滑动平均方法，所以在反向传播时也要更新可训练变量的滑动平均值
-        with tf.control_dependencies([train_step, variables_averages_op]):
-            train_op = tf.no_op(name='train')
-
-    # 训练模型。
+def get_result():
+    z_dim = 2
+    model_path = "/opt/py-project/Adversarial_Autoencoder/Results/Adversarial_Autoencoder/2021-07-12 19:09:56.496976_2_0.001_200_12_0.9_Adversarial_Autoencoder/Saved_models"
+    input_checkpoint = tf.train.latest_checkpoint(model_path)
+    saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)
     with tf.Session() as sess:
-        tf.global_variables_initializer().run()
-        for i in tqdm.tqdm(range(TRAINING_STEPS)):
-            xs, ys = mnist.train.next_batch(BATCH_SIZE)
-            _, loss_value, step = sess.run([train_op, loss, global_step], feed_dict={x: xs, y_: ys})
-
-            if i%1000 == 0:
-                print("After %d training step(s), loss on training batch is %g."%(i, loss_value))
-        # 计算MNIST测试数据对应的输出层矩阵
-        final_result = sess.run(y, feed_dict={x: mnist.test.images})
-    # 返回输出层矩阵的值
-    return final_result
-"""
+        saver.restore(sess, save_path=input_checkpoint)
+        op = sess.graph.get_tensor_by_name('Decoder_1/Sigmoid:0')
+        decoder_input = sess.graph.get_tensor_by_name('Decoder_input:0')
+        results = np.zeros((1, 784))
+        for i in range(num):
+            result = sess.run(op, feed_dict={decoder_input: np.random.random((1, z_dim))})
+            results = np.vstack((results, result))
+        return results[1:]
 
 
 # 生成可视化最终输出层向量所需要的日志文件
@@ -77,7 +43,11 @@ def visualisation(final_result):
     # 使用一个新的变量来保存最终输出层向量的结果，因为embedding是通过Tensorflow中变量完成的，所以PROJECTOR可视化的都是TensorFlow中的变哇。
     # 所以这里需要新定义一个变量来保存输出层向量的取值
     y = tf.Variable(final_result, name=TENSOR_NAME)
-    summary_writer = tf.summary.FileWriter(LOG_DIR)
+
+    # 生成会话，初始化新声明的变量并将需要的日志信息写入文件。
+    sess = tf.InteractiveSession()
+    sess.run(tf.global_variables_initializer())
+    # summary_writer = tf.summary.FileWriter(LOG_DIR)
 
     # 通过project.ProjectorConfig类来帮助生成日志文件
     config = projector.ProjectorConfig()
@@ -99,13 +69,13 @@ def visualisation(final_result):
     # 这将用于从sprite图像中截取正确的原始图片。
     embedding.sprite.single_image_dim.extend([28, 28])
 
+    merged = tf.summary.merge_all()  # 将图形、训练过程等数据合并在一起
+    summary_writer = tf.summary.FileWriter(LOG_DIR, sess.graph)  # 将训练日志写入到logs文件夹下
+
     # Say that you want to visualise the embeddings
     # 将PROJECTOR所需要的内容写入日志文件。
     projector.visualize_embeddings(summary_writer, config)
 
-    # 生成会话，初始化新声明的变量并将需要的日志信息写入文件。
-    sess = tf.InteractiveSession()
-    sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
     saver.save(sess, os.path.join(LOG_DIR, "model"), TRAINING_STEPS)
 
@@ -115,9 +85,9 @@ def visualisation(final_result):
 # 主函数先调用模型训练的过程，再使用训练好的模型来处理MNIST测试数据，
 # 最后将得到的输出层矩阵输出到PROJECTOR需要的日志文件中。
 def main(argv=None):
-    # mnist = input_data.read_data_sets("./MNIST_data", one_hot=True)
-    # final_result = train(mnist)
-    final_result = np.random.random((1000, 784))
+
+    # final_result = np.random.random((100, 784))
+    final_result = get_result()
     visualisation(final_result)
 
 

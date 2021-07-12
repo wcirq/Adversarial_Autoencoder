@@ -7,6 +7,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 LOG_DIR = 'log'
 SPRITE_FILE = 'mnist_sprite.png'
 META_FIEL = "mnist_meta.tsv"
+num = 500
 
 
 # 使用给出的MNIST图片列表生成sprite图像
@@ -39,7 +40,7 @@ def create_sprite_image(images):
 mnist = input_data.read_data_sets("./Data", one_hot=False)
 
 # 生成sprite图像
-to_visualise = 1 - np.reshape(mnist.test.images, (-1, 28, 28))
+to_visualise = 1 - np.reshape(mnist.test.images[:num], (-1, 28, 28))
 sprite_image = create_sprite_image(to_visualise)
 
 # 将生成的sprite图片放到相应的日志目录下
@@ -50,6 +51,9 @@ plt.imshow(sprite_image, cmap='gray')
 # 生成每张图片对应的标签文件并写道相应的日志目录下
 path_for_mnist_metadata = os.path.join(LOG_DIR, META_FIEL)
 with open(path_for_mnist_metadata, 'w') as f:
-    f.write("Index\tLabel\n")
-    for index, label in enumerate(mnist.test.labels):
-        f.write("%d\t%d\n"%(index, label))
+    # f.write("Index\tLabel\n")
+    # for index, label in enumerate(mnist.test.labels[:100]):
+    #     f.write("%d\t%d\n"%(index, label))
+
+    for index, label in enumerate(mnist.test.labels[:num]):
+        f.write("%d\n"%(label,))
