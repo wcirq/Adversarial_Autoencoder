@@ -15,7 +15,7 @@ input_dim = 784
 n_l1 = 1000
 n_l2 = 1000
 z_dim = 10
-batch_size = 100
+batch_size = 500
 n_epochs = 1000
 learning_rate = 0.001
 beta1 = 0.9
@@ -59,8 +59,8 @@ def generate_image_grid(sess, op):
     :param op: Operation that needs to be called inorder to get the decoder output
     :return: None, displays a matplotlib window with all the merged images.
     """
-    nx, ny = 10, 10
-    random_inputs = np.random.randn(10, z_dim) * 5.
+    nx, ny = 10, 20
+    random_inputs = np.random.randn(ny, z_dim) * 5.
     sample_y = np.identity(10)
     plt.subplot()
     gs = gridspec.GridSpec(nx, ny, hspace=0.05, wspace=0.05)
@@ -356,7 +356,7 @@ def train(train_model=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Autoencoder Train Parameter")
-    parser.add_argument('--train', '-t', type=bool, default=True,
+    parser.add_argument('--train', '-t', type=bool, default=False,
                         help='Set to True to train a new model, False to load weights and display image grid')
     args = parser.parse_args()
     train(train_model=args.train)
