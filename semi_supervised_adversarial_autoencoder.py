@@ -15,7 +15,7 @@ input_dim = 784
 n_l1 = 1000
 n_l2 = 1000
 z_dim = 10
-batch_size = 500
+batch_size = 1000
 n_epochs = 1000
 learning_rate = 0.001
 beta1 = 0.9
@@ -356,7 +356,7 @@ def train(train_model=True):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Autoencoder Train Parameter")
-    parser.add_argument('--train', '-t', type=bool, default=False,
+    parser.add_argument('--train', '-t', type=bool, default=True,
                         help='Set to True to train a new model, False to load weights and display image grid')
     args = parser.parse_args()
     train(train_model=args.train)
