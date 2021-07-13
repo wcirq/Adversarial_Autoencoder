@@ -9,7 +9,7 @@ import cv2
 from tensorflow.contrib.tensorboard.plugins import projector
 from tensorflow.examples.tutorials.mnist import input_data
 
-BATCH_SIZE = 100
+# BATCH_SIZE = 200
 LEARNING_RATE_BASE = 0.8
 LEARNING_RATE_DECAY = 0.99
 REGULARIZATION_RATE = 0.0001
@@ -20,7 +20,17 @@ LOG_DIR = 'log'
 SPRITE_FILE = 'mnist_sprite.png'
 META_FIEL = "mnist_meta.tsv"
 TENSOR_NAME = "FINAL_LOGITS"
-num = 500
+num = 1000
+
+
+def del_file(path):
+    ls = os.listdir(path)
+    for i in ls:
+        c_path = os.path.join(path, i)
+        if os.path.isdir(c_path):
+            del_file(c_path)
+        else:
+            os.remove(c_path)
 
 
 def imshow(frame, name="window", delay=0):
@@ -79,9 +89,15 @@ def build_meta_sprite():
 
 
 def get_result():
+    root = "/opt/py-project/Adversarial_Autoencoder/Results/Adversarial_Autoencoder"
     mnist = input_data.read_data_sets("./Data", one_hot=False)
     z_dim = 3
-    model_path = "/opt/py-project/Adversarial_Autoencoder/Results/Adversarial_Autoencoder/2021-07-13 09:13:38.932779_3_0.001_500_100_0.9_Adversarial_Autoencoder/Saved_models"
+
+    all_results = os.listdir(root)
+    all_results.sort()
+
+    model_path = os.path.join(root, all_results[-1], "Saved_models")
+
     input_checkpoint = tf.train.latest_checkpoint(model_path)
     saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)
     with tf.Session() as sess:
@@ -93,6 +109,27 @@ def get_result():
         decoder_output = sess.graph.get_tensor_by_name('Decoder/Sigmoid:0')
         result = sess.run(encoder_output, feed_dict={x_input: mnist.test.images[:num]})
         return result
+
+
+def get_result_by_semi_supervised():
+    root = "/opt/py-project/Adversarial_Autoencoder/Results/Semi_Supervised"
+    mnist = input_data.read_data_sets("./Data", one_hot=False)
+    z_dim = 3
+
+    all_results = os.listdir(root)
+    all_results.sort()
+
+    model_path = os.path.join(root, all_results[-1], "Saved_models")
+
+    input_checkpoint = tf.train.latest_checkpoint(model_path)
+    saver = tf.train.import_meta_graph(input_checkpoint + '.meta', clear_devices=True)
+    with tf.Session() as sess:
+        saver.restore(sess, save_path=input_checkpoint)
+        x_input = sess.graph.get_tensor_by_name('Input:0')
+        encoder_output_label = sess.graph.get_tensor_by_name('Encoder/e_softmax_label:0')
+        encoder_output_latent = sess.graph.get_tensor_by_name('Encoder/e_latent_variable/matmul_1:0')
+        encoder_label, encoder_latent = sess.run([encoder_output_label, encoder_output_latent], feed_dict={x_input: mnist.test.images[:num]})
+        return encoder_latent
 
 
 # 生成可视化最终输出层向量所需要的日志文件
@@ -142,8 +179,10 @@ def visualisation(final_result):
 # 主函数先调用模型训练的过程，再使用训练好的模型来处理MNIST测试数据，
 # 最后将得到的输出层矩阵输出到PROJECTOR需要的日志文件中。
 def main(argv=None):
+    del_file(LOG_DIR)
     build_meta_sprite()
-    final_result = get_result()
+    # final_result = get_result()
+    final_result = get_result_by_semi_supervised()
     visualisation(final_result)
 
 

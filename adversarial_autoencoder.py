@@ -16,9 +16,9 @@ mnist = input_data.read_data_sets('./Data', one_hot=True)
 input_dim = 784
 n_l1 = 1000
 n_l2 = 1000
-z_dim = 3
-batch_size = 1000
-n_epochs = 1000
+z_dim = 2
+batch_size = 200
+n_epochs = 100
 learning_rate = 0.001
 beta1 = 0.9
 results_path = './Results/Adversarial_Autoencoder'
